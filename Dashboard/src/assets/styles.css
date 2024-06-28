@@ -18,3 +18,7 @@
 input#date{
     height: 35px;
 }
+
+#add_scenario_btn{
+    cursor: pointer;
+}
