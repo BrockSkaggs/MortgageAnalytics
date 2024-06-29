@@ -1,7 +1,10 @@
 from dash import Dash, html, dcc, callback, clientside_callback, Input, Output, State, Patch
 import dash_bootstrap_components as dbc
 import datetime as dt
+import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
+
 
 from aio.scenario_addin_aio import ScenarioAddinAIO
 from utils.loan_agent import LoanAgent
@@ -84,6 +87,14 @@ def convert_date_input(date_txt: str) -> dt.date:
 def calc_rate(rate_percent: int)-> float:
     return rate_percent/100
 
+def add_month(cur_date: dt.date) -> dt.date:
+    if cur_date.month < 12:
+        return dt.date(cur_date.year, cur_date.month+1, cur_date.day)
+    return dt.date(cur_date.year+1, 1, cur_date.day)
+
+def add_year(cur_date: dt.date) -> dt.date:
+    return dt.date(cur_date.year+1, cur_date.month, cur_date.day)
+
 clientside_callback("""function(clicks){
         return true;
     }""",
@@ -117,7 +128,7 @@ def update_outcomes_chart(_, start_picker_val: str, duration: int, rate: float, 
     return fig
 
 @callback(
-    Output('outcomes_chart', 'figure'),
+    Output('outcomes_chart', 'figure', allow_duplicate=True),
     Input(ScenarioAddinAIO.ids.one_time_compute_btn('scenario_addin'), 'n_clicks'),
     State('start_date_picker', 'date'),
     State('duration_dropdown', 'value'),
@@ -134,6 +145,38 @@ def add_one_time_scenario(_, start_picker_val: str, duration: int, rate: float, 
     pay_date = convert_date_input(pay_date_val)
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, {pay_date: pay_amount})
+
+    patch_fig = Patch()
+    patch_fig['data'].append(trace)
+    return patch_fig
+
+@callback(
+    Output('outcomes_chart', 'figure', allow_duplicate=True),
+    Input(ScenarioAddinAIO.ids.uniform_compute_btn('scenario_addin'), 'n_clicks'),
+    State('start_date_picker', 'date'),
+    State('duration_dropdown', 'value'),
+    State('interest_rate_input', 'value'),
+    State('loan_amount_input', 'value'),
+    State(ScenarioAddinAIO.ids.uniform_start_date_picker('scenario_addin'), 'date'),
+    State(ScenarioAddinAIO.ids.uniform_freq_drpdwn('scenario_addin'), 'value'),
+    State(ScenarioAddinAIO.ids.uniform_num_payments_input('scenario_addin'), 'value'),
+    State(ScenarioAddinAIO.ids.uniform_amount_input('scenario_addin'), 'value'),
+    prevent_initial_call=True
+)
+def add_uniform_scenario(_, start_picker_val: str, duration: int, rate: float, amount: float,
+    pay_start_val: str, pay_freq: str, num_payments: int, pay_amount: int):
+    start_date = convert_date_input(start_picker_val)
+    pay_start_date = convert_date_input(pay_start_val)
+    cond_rate =calc_rate(rate)
+
+    extra_payments = {}
+    cur_date =pay_start_date
+    for i in range(num_payments):
+        pay_date = add_month(cur_date) if pay_freq == 'Month' else add_year(cur_date)
+        extra_payments[pay_date] = pay_amount
+        cur_date = pay_date
+    agent = LoanAgent()
+    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments)
 
     patch_fig = Patch()
     patch_fig['data'].append(trace)
