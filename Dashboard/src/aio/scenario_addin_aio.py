@@ -3,15 +3,11 @@ import dash_bootstrap_components as dbc
 import datetime as dt
 import uuid
 
+from aio.date_pick_aio import DatePickAIO
+
 class ScenarioAddinAIO(html.Div):
 
     class ids:
-        one_time_date_picker = lambda aio_id: {
-            'component': 'ScenarioAddinAIO',
-            'subcomponent': 'one_time_date_picker',
-            'aio_id': aio_id
-        }
-
         one_time_amount_input = lambda aio_id: {
             'component': 'ScenarioAddinAIO',
             'subcomponent': 'one_time_amount_input',
@@ -21,12 +17,6 @@ class ScenarioAddinAIO(html.Div):
         one_time_compute_btn = lambda aio_id: {
             'component': 'ScenarioAddinAIO',
             'subcomponent': 'one_time_compute_btn',
-            'aio_id': aio_id
-        }
-
-        uniform_start_date_picker = lambda aio_id: {
-            'component': 'ScenarioAddinAIO',
-            'subcomponent': 'uniform_start_date_picker',
             'aio_id': aio_id
         }
 
@@ -85,12 +75,7 @@ class ScenarioAddinAIO(html.Div):
                                         'Payment Date'
                                     ], className='col-lg-3 vertical-align'),
                                     html.Div([
-                                        dcc.DatePickerSingle(
-                                            date=dt.date.today(),
-                                            month_format='MMMM Y',
-                                            placeholder='MMMM Y',
-                                            id=self.ids.one_time_date_picker(aio_id)
-                                        )
+                                        DatePickAIO('one_time_date_pick')
                                     ], className='col-lg-9')
                                 ], className='row'),
                                 html.Div([
@@ -123,12 +108,7 @@ class ScenarioAddinAIO(html.Div):
                                         'Start Date'
                                     ], className='col-lg-3 vertical-align'),
                                     html.Div([
-                                        dcc.DatePickerSingle(
-                                            date=dt.date.today(),
-                                            month_format='MMMM Y',
-                                            placeholder='MMMM Y',
-                                            id=self.ids.uniform_start_date_picker(aio_id)
-                                        )
+                                        DatePickAIO('uniform_date_pick')
                                     ], className='col-lg-3')
                                 ], className='row'),
                                 html.Div([

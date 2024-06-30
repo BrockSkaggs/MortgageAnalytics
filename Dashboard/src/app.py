@@ -5,8 +5,9 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-
+from aio.date_pick_aio import DatePickAIO
 from aio.scenario_addin_aio import ScenarioAddinAIO
+from common import months
 from utils.loan_agent import LoanAgent
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -23,13 +24,8 @@ app.layout =html.Div([
         html.Div([
             dbc.Card(
                 dbc.CardBody([
-                    html.Span('Start Date', className='vertical-align label-margin-right'),
-                    dcc.DatePickerSingle(
-                        id='start_date_picker',
-                        date = dt.date(dt.date.today().year,1,1),
-                        month_format='MMMM Y',
-                        placeholder='MMMM Y',
-                    ),
+                    html.Span('Start Month/Year', className='vertical-align label-margin-right'),
+                    DatePickAIO('start_loan_date_pick'),
                     html.Span('Duration', className='vertical-align label-margin-left label-margin-right'),
                     dcc.Dropdown(
                         id='duration_dropdown',
@@ -81,8 +77,8 @@ app.layout =html.Div([
     )
 ], className='container-fluid')
 
-def convert_date_input(date_txt: str) -> dt.date:
-    return dt.datetime.strptime(date_txt, '%Y-%m-%d').date()
+def convert_date_input(month: int, year: int) -> dt.date:
+    return dt.date(year, month, 1)
 
 def calc_rate(rate_percent: int)-> float:
     return rate_percent/100
@@ -114,14 +110,15 @@ def close_scenario_modal(one_time_compute_click, uniform_compute_click):
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
     Input('compute_baseline_btn', 'n_clicks'),
-    State('start_date_picker', 'date'),
+    State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
+    State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
     State('duration_dropdown', 'value'),
     State('interest_rate_input', 'value'),
     State('loan_amount_input', 'value'),
     prevent_initial_call=True
 )
-def update_outcomes_chart(_, start_picker_val: str, duration: int, rate: float, amount: float):
-    start_date =convert_date_input(start_picker_val)
+def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, rate: float, amount: float):
+    start_date =convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
     agent = LoanAgent()
     baseline_df, fig = agent.calc_baseline_amor_schedule(amount, start_date, cond_rate, duration)
@@ -130,19 +127,21 @@ def update_outcomes_chart(_, start_picker_val: str, duration: int, rate: float, 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
     Input(ScenarioAddinAIO.ids.one_time_compute_btn('scenario_addin'), 'n_clicks'),
-    State('start_date_picker', 'date'),
+    State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
+    State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
     State('duration_dropdown', 'value'),
     State('interest_rate_input', 'value'),
     State('loan_amount_input', 'value'),
-    State(ScenarioAddinAIO.ids.one_time_date_picker('scenario_addin'), 'date'),
+    State(DatePickAIO.ids.month_drpdwn('one_time_date_pick'), 'value'),
+    State(DatePickAIO.ids.year_input('one_time_date_pick'), 'value'),
     State(ScenarioAddinAIO.ids.one_time_amount_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
-def add_one_time_scenario(_, start_picker_val: str, duration: int, rate: float, amount: float, 
-    pay_date_val: str, pay_amount: int):
-    start_date = convert_date_input(start_picker_val)
+def add_one_time_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float, 
+    pay_month: int, pay_year: int, pay_amount: int):
+    start_date = convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
-    pay_date = convert_date_input(pay_date_val)
+    pay_date = convert_date_input(pay_month, pay_year)
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, {pay_date: pay_amount})
 
@@ -153,20 +152,22 @@ def add_one_time_scenario(_, start_picker_val: str, duration: int, rate: float, 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
     Input(ScenarioAddinAIO.ids.uniform_compute_btn('scenario_addin'), 'n_clicks'),
-    State('start_date_picker', 'date'),
+    State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
+    State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
     State('duration_dropdown', 'value'),
     State('interest_rate_input', 'value'),
     State('loan_amount_input', 'value'),
-    State(ScenarioAddinAIO.ids.uniform_start_date_picker('scenario_addin'), 'date'),
+    State(DatePickAIO.ids.month_drpdwn('uniform_date_pick'), 'value'),
+    State(DatePickAIO.ids.year_input('uniform_date_pick'), 'value'),
     State(ScenarioAddinAIO.ids.uniform_freq_drpdwn('scenario_addin'), 'value'),
     State(ScenarioAddinAIO.ids.uniform_num_payments_input('scenario_addin'), 'value'),
     State(ScenarioAddinAIO.ids.uniform_amount_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
-def add_uniform_scenario(_, start_picker_val: str, duration: int, rate: float, amount: float,
-    pay_start_val: str, pay_freq: str, num_payments: int, pay_amount: int):
-    start_date = convert_date_input(start_picker_val)
-    pay_start_date = convert_date_input(pay_start_val)
+def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float,
+    pay_start_month: int, pay_start_year: int, pay_freq: str, num_payments: int, pay_amount: int):
+    start_date = convert_date_input(start_month, start_year)
+    pay_start_date = convert_date_input(pay_start_month, pay_start_year)
     cond_rate =calc_rate(rate)
 
     extra_payments = {}
@@ -189,4 +190,4 @@ def add_uniform_scenario(_, start_picker_val: str, duration: int, rate: float, a
 
 
 if __name__  == '__main__':
-        app.run(debug=True, host='0.0.0.0', port='8050', dev_tools_hot_reload=True)
+        app.run(debug=True, host='0.0.0.0', port='8049', dev_tools_hot_reload=True)
