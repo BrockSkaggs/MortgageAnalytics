@@ -102,13 +102,15 @@ clientside_callback("""function(clicks){
     Output('scenario_addin_modal', 'is_open'),
     Input(ScenarioAddinAIO.ids.one_time_compute_btn('scenario_addin'), 'n_clicks'),
     Input(ScenarioAddinAIO.ids.uniform_compute_btn('scenario_addin'), 'n_clicks'),
+    Input(ScenarioAddinAIO.ids.custom_compute_btn('scenario_addin'), 'n_clicks'),
     prevent_initial_call=True
 )
-def close_scenario_modal(one_time_compute_click, uniform_compute_click):
+def close_scenario_modal(one_time_compute_click, uniform_compute_click, custom_compute_click):
     return False
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
+    Output(ScenarioAddinAIO.ids.baseline_store('scenario_addin'), 'data'),
     Input('compute_baseline_btn', 'n_clicks'),
     State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
     State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
@@ -122,7 +124,7 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     cond_rate =calc_rate(rate)
     agent = LoanAgent()
     baseline_df, fig = agent.calc_baseline_amor_schedule(amount, start_date, cond_rate, duration)
-    return fig
+    return fig, baseline_df['payment_date'].dt.date.to_list()
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
@@ -176,6 +178,36 @@ def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, ra
         pay_date = add_month(cur_date) if pay_freq == 'Month' else add_year(cur_date)
         extra_payments[pay_date] = pay_amount
         cur_date = pay_date
+    agent = LoanAgent()
+    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments)
+
+    patch_fig = Patch()
+    patch_fig['data'].append(trace)
+    return patch_fig
+
+@callback(
+    Output('outcomes_chart', 'figure', allow_duplicate=True),
+    Input(ScenarioAddinAIO.ids.custom_compute_btn('scenario_addin'), 'n_clicks'),
+    State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
+    State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
+    State('duration_dropdown', 'value'),
+    State('interest_rate_input', 'value'),
+    State('loan_amount_input', 'value'),
+    State(ScenarioAddinAIO.ids.custom_grid('scenario_addin'), 'rowData'),
+    prevent_initial_call=True
+)
+def add_custom_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float,
+    custom_schedule: list):
+    start_date = convert_date_input(start_month, start_year)
+    cond_rate =calc_rate(rate)
+    
+    extra_payments = {}
+    for sched_item in custom_schedule:
+        if sched_item['amount'] == 0:
+            continue
+        pay_date = dt.datetime.strptime(sched_item['date'], '%Y-%m-%d').date()
+        extra_payments[pay_date] = sched_item['amount']
+
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments)
 

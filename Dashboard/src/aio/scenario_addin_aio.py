@@ -1,4 +1,5 @@
-from dash import html, dcc
+from dash import html, dcc, callback, Input, Output, MATCH
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import datetime as dt
 import uuid
@@ -43,6 +44,37 @@ class ScenarioAddinAIO(html.Div):
             'subcomponent': 'uniform_compute_btn',
             'aio_id': aio_id
         }
+
+        baseline_store = lambda aio_id: {
+            'component': 'ScenarioAddinAIO',
+            'subcomponent': 'baseline_store',
+            'aio_id': aio_id
+        }
+
+        custom_grid = lambda aio_id: {
+            'component': 'ScenarioAddinAIO',
+            'subcomponent': 'custom_grid',
+            'aio_id': aio_id
+        }
+
+        custom_compute_btn = lambda aio_id: {
+            'component': 'ScenarioAddinAIO',
+            'subcomponent': 'custom_compute_btn',
+            'aio_id': aio_id
+        }
+
+        custom_grid_export_btn = lambda aio_id: {
+            'component': 'ScenarioAddinAIO',
+            'subcomponent': 'custom_grid_export_btn',
+            'aio_id': aio_id
+        }
+
+        custom_grid_upload = lambda aio_id: {
+            'component': 'ScenarioAddinAIO',
+            'subcomponent': 'custom_grid_upload',
+            'aio_id': aio_id
+        }
+
 
     ids = ids
 
@@ -159,10 +191,55 @@ class ScenarioAddinAIO(html.Div):
                             ], className='container-fluid mt-2')
                         ], label='Uniform'),
                         dbc.Tab([
-
+                            html.Div([
+                                html.Div([
+                                    html.Div([
+                                        dag.AgGrid(
+                                            id=self.ids.custom_grid(aio_id),
+                                            defaultColDef={'filter':True},
+                                            columnSize='responsiveSizeToFit',
+                                            columnDefs=[
+                                                {'field':'date', 'headerName':'Date', 'editable':False},
+                                                {'field':'amount', 'headerName':'Additional Principal', 'editable':True,
+                                                  "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}},
+                                            ],
+                                            csvExportParams={'filename':'custom_payments.csv'}
+                                        )
+                                    ], className='col-lg-12')
+                                ], className='row'),
+                                html.Div([
+                                    html.Div([
+                                        dbc.Button('Export Grid', color='secondary', outline=True, className='label-margin-right', id=self.ids.custom_grid_export_btn(aio_id)),
+                                        dcc.Upload(dbc.Button('Load Grid From File', outline=True, color='secondary', className='label-margin-right'), id=self.ids.custom_grid_upload(aio_id)),
+                                        dbc.Button('Compute', color='primary', id=self.ids.custom_compute_btn(aio_id))
+                                    ], className='col-lg-12 d-flex')
+                                ], className='row mt-2')
+                            ], className='container-fluid mt-2')
                         ], label='Custom')
                     ])
                 ], className='col-12')
-            ], className='row')
+            ], className='row'),
+            dcc.Store(id=self.ids.baseline_store(aio_id))
         ], className='container-fluid')
-    
+
+    @callback(
+        Output(ids.custom_grid(MATCH),'rowData'),
+        Input(ids.baseline_store(MATCH),'data'),
+        prevent_initial_call=True
+    )
+    def init_custom_grid(store_data):
+        data = []
+        for date_txt in store_data:
+            data.append({
+                'date': date_txt,
+                'amount':0
+            })
+        return data
+
+    @callback(
+        Output(ids.custom_grid(MATCH), 'exportDataAsCsv'),
+        Input(ids.custom_grid_export_btn(MATCH), 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def export_custom_grid(_):
+        return True
