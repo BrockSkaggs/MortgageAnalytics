@@ -1,4 +1,5 @@
-from dash import html, dcc, callback, Input, Output, MATCH
+import base64
+from dash import html, dcc, callback, Input, Output, MATCH, ctx
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import datetime as dt
@@ -9,6 +10,12 @@ from aio.date_pick_aio import DatePickAIO
 class ScenarioAddinAIO(html.Div):
 
     class ids:
+        name_input = lambda aio_id: {
+            'component': 'ScenarioAddinAIO',
+            'subcomponent': 'name_input',
+            'aio_id': aio_id
+        }
+
         one_time_amount_input = lambda aio_id: {
             'component': 'ScenarioAddinAIO',
             'subcomponent': 'one_time_amount_input',
@@ -97,6 +104,11 @@ class ScenarioAddinAIO(html.Div):
                     html.H1('Scenario Add-In')
                 ], className='col-12')
             ], className='row'),
+            html.Div([
+                html.Div([
+                    dbc.Input(type='text', placeholder='Enter scenario name...', id=self.ids.name_input(aio_id))
+                ], className='col-12')
+            ], className='row mt-2'),
             html.Div([
                 html.Div([
                     dbc.Tabs([
@@ -218,22 +230,45 @@ class ScenarioAddinAIO(html.Div):
                         ], label='Custom')
                     ])
                 ], className='col-12')
-            ], className='row'),
+            ], className='row mt-2'),
             dcc.Store(id=self.ids.baseline_store(aio_id))
         ], className='container-fluid')
 
+    
     @callback(
         Output(ids.custom_grid(MATCH),'rowData'),
         Input(ids.baseline_store(MATCH),'data'),
+        Input(ids.custom_grid_upload(MATCH),'contents'),
         prevent_initial_call=True
     )
-    def init_custom_grid(store_data):
+    def init_custom_grid(store_data, upload_contents):
+        def parse_csv_line(csv_line: str) -> dict:
+            line_data = csv_line.split(',',1)
+            amount = float(line_data[1].replace('$','').replace(',','').replace('"',''))
+            return {
+                'date': dt.datetime.strptime(line_data[0],'%m/%d/%Y').strftime('%Y-%m-%d'),
+                'amount': amount
+            }
+
         data = []
-        for date_txt in store_data:
-            data.append({
-                'date': date_txt,
-                'amount':0
-            })
+        if 'baseline_store' in ctx.triggered_id['subcomponent']:
+            for date_txt in store_data:
+                data.append({
+                    'date': date_txt,
+                    'amount':0
+                })
+        else:
+            if upload_contents is not None:
+                content_type, content_string = upload_contents.split(',')
+                decoded = base64.b64decode(content_string).decode('utf-8')
+                is_first = True
+                for csv_line in decoded.split('\r\n'):
+                    if is_first:
+                        is_first = False
+                        continue
+                    if csv_line.strip() != '': 
+                        data.append(parse_csv_line(csv_line))
+
         return data
 
     @callback(

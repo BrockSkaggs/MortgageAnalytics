@@ -137,15 +137,16 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     State(DatePickAIO.ids.month_drpdwn('one_time_date_pick'), 'value'),
     State(DatePickAIO.ids.year_input('one_time_date_pick'), 'value'),
     State(ScenarioAddinAIO.ids.one_time_amount_input('scenario_addin'), 'value'),
+    State(ScenarioAddinAIO.ids.name_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
 def add_one_time_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float, 
-    pay_month: int, pay_year: int, pay_amount: int):
+    pay_month: int, pay_year: int, pay_amount: int, addin_name:str):
     start_date = convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
     pay_date = convert_date_input(pay_month, pay_year)
     agent = LoanAgent()
-    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, {pay_date: pay_amount})
+    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, {pay_date: pay_amount}, addin_name)
 
     patch_fig = Patch()
     patch_fig['data'].append(trace)
@@ -164,10 +165,11 @@ def add_one_time_scenario(_, start_month: int, start_year: int, duration: int, r
     State(ScenarioAddinAIO.ids.uniform_freq_drpdwn('scenario_addin'), 'value'),
     State(ScenarioAddinAIO.ids.uniform_num_payments_input('scenario_addin'), 'value'),
     State(ScenarioAddinAIO.ids.uniform_amount_input('scenario_addin'), 'value'),
+    State(ScenarioAddinAIO.ids.name_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
 def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float,
-    pay_start_month: int, pay_start_year: int, pay_freq: str, num_payments: int, pay_amount: int):
+    pay_start_month: int, pay_start_year: int, pay_freq: str, num_payments: int, pay_amount: int, addin_name: str):
     start_date = convert_date_input(start_month, start_year)
     pay_start_date = convert_date_input(pay_start_month, pay_start_year)
     cond_rate =calc_rate(rate)
@@ -179,7 +181,7 @@ def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, ra
         extra_payments[pay_date] = pay_amount
         cur_date = pay_date
     agent = LoanAgent()
-    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments)
+    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments, addin_name)
 
     patch_fig = Patch()
     patch_fig['data'].append(trace)
@@ -194,10 +196,11 @@ def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, ra
     State('interest_rate_input', 'value'),
     State('loan_amount_input', 'value'),
     State(ScenarioAddinAIO.ids.custom_grid('scenario_addin'), 'rowData'),
+    State(ScenarioAddinAIO.ids.name_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
 def add_custom_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float,
-    custom_schedule: list):
+    custom_schedule: list, addin_name):
     start_date = convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
     
@@ -209,7 +212,7 @@ def add_custom_scenario(_, start_month: int, start_year: int, duration: int, rat
         extra_payments[pay_date] = sched_item['amount']
 
     agent = LoanAgent()
-    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments)
+    mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments, addin_name)
 
     patch_fig = Patch()
     patch_fig['data'].append(trace)
@@ -222,4 +225,4 @@ def add_custom_scenario(_, start_month: int, start_year: int, duration: int, rat
 
 
 if __name__  == '__main__':
-        app.run(debug=True, host='0.0.0.0', port='8049', dev_tools_hot_reload=True)
+        app.run(debug=True, host='0.0.0.0', port='8050', dev_tools_hot_reload=True)

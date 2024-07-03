@@ -29,12 +29,13 @@ class LoanAgent:
         fig = go.Figure(data=traces, layout=layout)
         return (df, fig)
 
-    def calc_mod_amor_schedule(self, loan_val: int, start_date: dt.date, rate: float, term: int, extra_principal_funds:Dict[dt.date, float]):
+    def calc_mod_amor_schedule(self, loan_val: int, start_date: dt.date, rate: float, term: int, extra_principal_funds:Dict[dt.date, float],
+        trace_name:str):
         loan_calc = LoanCalc()
         df = loan_calc.calc_amor_schedule(loan_val, start_date, rate, term, False, None, extra_principal_funds)
         trace = go.Scatter(
             x=df['payment_date'],
             y=df['balance'],
-            name='Modified'
+            name=trace_name
         )
         return (df, trace)
