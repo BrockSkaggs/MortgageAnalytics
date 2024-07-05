@@ -24,6 +24,8 @@ class DatePickAIO(html.Div):
 
     def __init__(
         self,
+        min_year: int, 
+        max_year: int,
         aio_id=None
     ):
 
@@ -41,7 +43,7 @@ class DatePickAIO(html.Div):
                 Input(
                     id=self.ids.year_input(aio_id),
                     type='number',
-                    min=2000, max=dt.date.today().year, step=1,
+                    min=min_year, max=max_year, step=1,
                     value=dt.date.today().year,
                     className='d-inline-block vertical-align',
                     style={'width':'125px'}

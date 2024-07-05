@@ -25,7 +25,7 @@ app.layout =html.Div([
             dbc.Card(
                 dbc.CardBody([
                     html.Span('Start Month/Year', className='vertical-align label-margin-right'),
-                    DatePickAIO('start_loan_date_pick'),
+                    DatePickAIO(2000, dt.date.today().year, 'start_loan_date_pick'),
                     html.Span('Duration', className='vertical-align label-margin-left label-margin-right'),
                     dcc.Dropdown(
                         id='duration_dropdown',
@@ -69,9 +69,7 @@ app.layout =html.Div([
         ], className='col-lg-12')
     ], className='row mt-2'),
     dbc.Modal(
-        dbc.ModalBody([
-            ScenarioAddinAIO('scenario_addin')
-        ]),
+        dbc.ModalBody([], id = 'scenario_addin_modal_body'),
         id='scenario_addin_modal',
         size='lg'
     )
@@ -110,7 +108,7 @@ def close_scenario_modal(one_time_compute_click, uniform_compute_click, custom_c
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
-    Output(ScenarioAddinAIO.ids.baseline_store('scenario_addin'), 'data'),
+    Output('scenario_addin_modal_body', 'children'),
     Input('compute_baseline_btn', 'n_clicks'),
     State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
     State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
@@ -124,7 +122,8 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     cond_rate =calc_rate(rate)
     agent = LoanAgent()
     baseline_df, fig = agent.calc_baseline_amor_schedule(amount, start_date, cond_rate, duration)
-    return fig, baseline_df['payment_date'].dt.date.to_list()
+    addIn = ScenarioAddinAIO(baseline_df['payment_date'].dt.date.to_list(), 'scenario_addin')
+    return fig, [addIn]
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
@@ -140,15 +139,17 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     State(ScenarioAddinAIO.ids.name_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
-def add_one_time_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float, 
+def add_one_time_scenario(compute_clicks, start_month: int, start_year: int, duration: int, rate: float, amount: float, 
     pay_month: int, pay_year: int, pay_amount: int, addin_name:str):
+    patch_fig = Patch()
+    if compute_clicks is None:
+        return patch_fig
+
     start_date = convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
     pay_date = convert_date_input(pay_month, pay_year)
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, {pay_date: pay_amount}, addin_name)
-
-    patch_fig = Patch()
     patch_fig['data'].append(trace)
     return patch_fig
 
@@ -168,8 +169,12 @@ def add_one_time_scenario(_, start_month: int, start_year: int, duration: int, r
     State(ScenarioAddinAIO.ids.name_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
-def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float,
+def add_uniform_scenario(compute_clicks, start_month: int, start_year: int, duration: int, rate: float, amount: float,
     pay_start_month: int, pay_start_year: int, pay_freq: str, num_payments: int, pay_amount: int, addin_name: str):
+    patch_fig = Patch()
+    if compute_clicks is None:
+        return patch_fig
+    
     start_date = convert_date_input(start_month, start_year)
     pay_start_date = convert_date_input(pay_start_month, pay_start_year)
     cond_rate =calc_rate(rate)
@@ -183,7 +188,6 @@ def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, ra
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments, addin_name)
 
-    patch_fig = Patch()
     patch_fig['data'].append(trace)
     return patch_fig
 
@@ -199,8 +203,11 @@ def add_uniform_scenario(_, start_month: int, start_year: int, duration: int, ra
     State(ScenarioAddinAIO.ids.name_input('scenario_addin'), 'value'),
     prevent_initial_call=True
 )
-def add_custom_scenario(_, start_month: int, start_year: int, duration: int, rate: float, amount: float,
+def add_custom_scenario(compute_clicks, start_month: int, start_year: int, duration: int, rate: float, amount: float,
     custom_schedule: list, addin_name):
+    patch_fig = Patch()
+    if compute_clicks is None:
+        return patch_fig
     start_date = convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
     
@@ -213,8 +220,6 @@ def add_custom_scenario(_, start_month: int, start_year: int, duration: int, rat
 
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments, addin_name)
-
-    patch_fig = Patch()
     patch_fig['data'].append(trace)
     return patch_fig
 

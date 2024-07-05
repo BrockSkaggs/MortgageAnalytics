@@ -87,6 +87,7 @@ class ScenarioAddinAIO(html.Div):
 
     def __init__(
         self,
+        sched_dates: list,
         aio_id=None
     ):
 
@@ -94,10 +95,18 @@ class ScenarioAddinAIO(html.Div):
             aio_id = str(uuid.uuid4())
 
         super().__init__(
-            self._gen_layout(aio_id)
+            self._gen_layout(sched_dates, aio_id)
         )
 
-    def _gen_layout(self, aio_id: str):
+    def _gen_layout(self, sched_dates: list, aio_id: str):
+        sched_start, sched_end = sched_dates[0], sched_dates[-1]
+        custom_row_data = []
+        for sched_date in sched_dates:
+            custom_row_data.append({
+                'date': sched_date.strftime('%Y-%m-%d'),
+                'amount':0
+            })
+
         return html.Div([
             html.Div([
                 html.Div([
@@ -119,7 +128,7 @@ class ScenarioAddinAIO(html.Div):
                                         'Payment Date'
                                     ], className='col-lg-3 vertical-align'),
                                     html.Div([
-                                        DatePickAIO('one_time_date_pick')
+                                        DatePickAIO(sched_start.year, sched_end.year, 'one_time_date_pick')
                                     ], className='col-lg-9')
                                 ], className='row'),
                                 html.Div([
@@ -152,7 +161,7 @@ class ScenarioAddinAIO(html.Div):
                                         'Start Date'
                                     ], className='col-lg-3 vertical-align'),
                                     html.Div([
-                                        DatePickAIO('uniform_date_pick')
+                                        DatePickAIO(sched_start.year, sched_end.year, 'uniform_date_pick')
                                     ], className='col-lg-3')
                                 ], className='row'),
                                 html.Div([
@@ -215,7 +224,8 @@ class ScenarioAddinAIO(html.Div):
                                                 {'field':'amount', 'headerName':'Additional Principal', 'editable':True,
                                                   "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}},
                                             ],
-                                            csvExportParams={'filename':'custom_payments.csv'}
+                                            csvExportParams={'filename':'custom_payments.csv'},
+                                            rowData=custom_row_data
                                         )
                                     ], className='col-lg-12')
                                 ], className='row'),
@@ -237,11 +247,11 @@ class ScenarioAddinAIO(html.Div):
     
     @callback(
         Output(ids.custom_grid(MATCH),'rowData'),
-        Input(ids.baseline_store(MATCH),'data'),
+        # Input(ids.baseline_store(MATCH),'data'),
         Input(ids.custom_grid_upload(MATCH),'contents'),
         prevent_initial_call=True
     )
-    def init_custom_grid(store_data, upload_contents):
+    def init_custom_grid(upload_contents):
         def parse_csv_line(csv_line: str) -> dict:
             line_data = csv_line.split(',',1)
             amount = float(line_data[1].replace('$','').replace(',','').replace('"',''))
@@ -251,23 +261,16 @@ class ScenarioAddinAIO(html.Div):
             }
 
         data = []
-        if 'baseline_store' in ctx.triggered_id['subcomponent']:
-            for date_txt in store_data:
-                data.append({
-                    'date': date_txt,
-                    'amount':0
-                })
-        else:
-            if upload_contents is not None:
-                content_type, content_string = upload_contents.split(',')
-                decoded = base64.b64decode(content_string).decode('utf-8')
-                is_first = True
-                for csv_line in decoded.split('\r\n'):
-                    if is_first:
-                        is_first = False
-                        continue
-                    if csv_line.strip() != '': 
-                        data.append(parse_csv_line(csv_line))
+        if upload_contents is not None:
+            content_type, content_string = upload_contents.split(',')
+            decoded = base64.b64decode(content_string).decode('utf-8')
+            is_first = True
+            for csv_line in decoded.split('\r\n'):
+                if is_first:
+                    is_first = False
+                    continue
+                if csv_line.strip() != '': 
+                    data.append(parse_csv_line(csv_line))
 
         return data
 
