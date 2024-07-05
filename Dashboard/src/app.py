@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from aio.date_pick_aio import DatePickAIO
+from aio.loan_summary_aio import LoanSummaryAIO
 from aio.scenario_addin_aio import ScenarioAddinAIO
 from common import months
 from utils.loan_agent import LoanAgent
@@ -68,6 +69,7 @@ app.layout =html.Div([
             ]))
         ], className='col-lg-12')
     ], className='row mt-2'),
+    html.Div([], className='row mt-2', id='summary_cards_div'),
     dbc.Modal(
         dbc.ModalBody([], id = 'scenario_addin_modal_body'),
         id='scenario_addin_modal',
@@ -109,6 +111,7 @@ def close_scenario_modal(one_time_compute_click, uniform_compute_click, custom_c
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
     Output('scenario_addin_modal_body', 'children'),
+    Output('summary_cards_div', 'children', allow_duplicate=True),
     Input('compute_baseline_btn', 'n_clicks'),
     State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
     State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
@@ -123,7 +126,8 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     agent = LoanAgent()
     baseline_df, fig = agent.calc_baseline_amor_schedule(amount, start_date, cond_rate, duration)
     addIn = ScenarioAddinAIO(baseline_df['payment_date'].dt.date.to_list(), 'scenario_addin')
-    return fig, [addIn]
+    summary_card = LoanSummaryAIO('Baseline')
+    return fig, [addIn], html.Div([summary_card], className='col-lg-3')
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
