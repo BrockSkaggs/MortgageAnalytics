@@ -126,7 +126,7 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     agent = LoanAgent()
     baseline_df, fig = agent.calc_baseline_amor_schedule(amount, start_date, cond_rate, duration)
     addIn = ScenarioAddinAIO(baseline_df['payment_date'].dt.date.to_list(), 'scenario_addin')
-    summary_card = LoanSummaryAIO('Baseline')
+    summary_card = LoanSummaryAIO('Baseline', baseline_df)
     return fig, [addIn], html.Div([summary_card], className='col-lg-3')
 
 @callback(
@@ -234,4 +234,4 @@ def add_custom_scenario(compute_clicks, start_month: int, start_year: int, durat
 
 
 if __name__  == '__main__':
-        app.run(debug=True, host='0.0.0.0', port='8050', dev_tools_hot_reload=True)
+        app.run(debug=True, host='0.0.0.0', port='8049', dev_tools_hot_reload=True)
