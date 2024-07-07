@@ -17,8 +17,7 @@ server = app.server
 app.layout =html.Div([
     html.Div([
         html.Div([
-            html.H1("Mortgage Analytics"),
-            html.P('Explore how loan factors (interest rate, monthly payments, etc.) influence outcomes (total cost, termination date, etc.).', className='mt-auto')
+            html.H1("Mortgage Analytics")
         ], className='col-12 d-flex')        
     ], className='row'),
     html.Div([
@@ -126,11 +125,14 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     agent = LoanAgent()
     baseline_df, fig = agent.calc_baseline_amor_schedule(amount, start_date, cond_rate, duration)
     addIn = ScenarioAddinAIO(baseline_df['payment_date'].dt.date.to_list(), 'scenario_addin')
+    patch_div = Patch()
     summary_card = LoanSummaryAIO('Baseline', baseline_df)
-    return fig, [addIn], html.Div([summary_card], className='col-lg-3')
+    patch_div.append(html.Div([summary_card], className='col-lg-3'))
+    return fig, [addIn], patch_div
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
+    Output('summary_cards_div', 'children', allow_duplicate=True),
     Input(ScenarioAddinAIO.ids.one_time_compute_btn('scenario_addin'), 'n_clicks'),
     State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
     State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
@@ -146,16 +148,19 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
 def add_one_time_scenario(compute_clicks, start_month: int, start_year: int, duration: int, rate: float, amount: float, 
     pay_month: int, pay_year: int, pay_amount: int, addin_name:str):
     patch_fig = Patch()
+    patch_div = Patch()
     if compute_clicks is None:
-        return patch_fig
+        return patch_fig, patch_div
 
     start_date = convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
     pay_date = convert_date_input(pay_month, pay_year)
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, {pay_date: pay_amount}, addin_name)
+    summary_card = LoanSummaryAIO(addin_name, mod_df)
+    patch_div.append(html.Div([summary_card], className='col-lg-3'))
     patch_fig['data'].append(trace)
-    return patch_fig
+    return patch_fig, patch_div
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
@@ -234,4 +239,4 @@ def add_custom_scenario(compute_clicks, start_month: int, start_year: int, durat
 
 
 if __name__  == '__main__':
-        app.run(debug=True, host='0.0.0.0', port='8049', dev_tools_hot_reload=True)
+        app.run(debug=True, host='0.0.0.0', port='8050', dev_tools_hot_reload=True)
