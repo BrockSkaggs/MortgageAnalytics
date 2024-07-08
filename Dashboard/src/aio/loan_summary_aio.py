@@ -114,7 +114,12 @@ class LoanSummaryAIO(html.Div):
                                                         "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}}
                                                 ],
                                                 rowData=pay_sched_df.to_dict('records'),
-                                                style={'height':250}
+                                                style={'height':250},
+                                                getRowStyle={
+                                                    "styleConditions":[
+                                                        {"condition": "params.data.extra_principal_paid > 0", "style": {"backgroundColor": "lightgray"}}
+                                                    ]
+                                                }
                                             )
                                         ], className='col-12')
                                     ], className='row')

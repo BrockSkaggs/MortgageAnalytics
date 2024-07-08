@@ -90,6 +90,9 @@ def add_month(cur_date: dt.date) -> dt.date:
 def add_year(cur_date: dt.date) -> dt.date:
     return dt.date(cur_date.year+1, cur_date.month, cur_date.day)
 
+def build_summary_card_col(summary_card: LoanSummaryAIO) -> html.Div:
+    return html.Div([summary_card], className='col-lg-3')
+
 clientside_callback("""function(clicks){
         return true;
     }""",
@@ -127,7 +130,7 @@ def update_outcomes_chart(_, start_month: int, start_year: int, duration: int, r
     addIn = ScenarioAddinAIO(baseline_df['payment_date'].dt.date.to_list(), 'scenario_addin')
     patch_div = Patch()
     summary_card = LoanSummaryAIO('Baseline', baseline_df)
-    patch_div.append(html.Div([summary_card], className='col-lg-3'))
+    patch_div.append(build_summary_card_col(summary_card))
     return fig, [addIn], patch_div
 
 @callback(
@@ -158,12 +161,13 @@ def add_one_time_scenario(compute_clicks, start_month: int, start_year: int, dur
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, {pay_date: pay_amount}, addin_name)
     summary_card = LoanSummaryAIO(addin_name, mod_df)
-    patch_div.append(html.Div([summary_card], className='col-lg-3'))
+    patch_div.append(build_summary_card_col(summary_card))
     patch_fig['data'].append(trace)
     return patch_fig, patch_div
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
+    Output('summary_cards_div', 'children', allow_duplicate=True),
     Input(ScenarioAddinAIO.ids.uniform_compute_btn('scenario_addin'), 'n_clicks'),
     State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
     State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
@@ -181,8 +185,9 @@ def add_one_time_scenario(compute_clicks, start_month: int, start_year: int, dur
 def add_uniform_scenario(compute_clicks, start_month: int, start_year: int, duration: int, rate: float, amount: float,
     pay_start_month: int, pay_start_year: int, pay_freq: str, num_payments: int, pay_amount: int, addin_name: str):
     patch_fig = Patch()
+    patch_div = Patch()
     if compute_clicks is None:
-        return patch_fig
+        return patch_fig, patch_div
     
     start_date = convert_date_input(start_month, start_year)
     pay_start_date = convert_date_input(pay_start_month, pay_start_year)
@@ -196,12 +201,14 @@ def add_uniform_scenario(compute_clicks, start_month: int, start_year: int, dura
         cur_date = pay_date
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments, addin_name)
-
+    summary_card = LoanSummaryAIO(addin_name, mod_df)
     patch_fig['data'].append(trace)
-    return patch_fig
+    patch_div.append(build_summary_card_col(summary_card))
+    return patch_fig, patch_div
 
 @callback(
     Output('outcomes_chart', 'figure', allow_duplicate=True),
+    Output('summary_cards_div', 'children', allow_duplicate=True),
     Input(ScenarioAddinAIO.ids.custom_compute_btn('scenario_addin'), 'n_clicks'),
     State(DatePickAIO.ids.month_drpdwn('start_loan_date_pick'), 'value'),
     State(DatePickAIO.ids.year_input('start_loan_date_pick'), 'value'),
@@ -215,8 +222,9 @@ def add_uniform_scenario(compute_clicks, start_month: int, start_year: int, dura
 def add_custom_scenario(compute_clicks, start_month: int, start_year: int, duration: int, rate: float, amount: float,
     custom_schedule: list, addin_name):
     patch_fig = Patch()
+    patch_div = Patch()
     if compute_clicks is None:
-        return patch_fig
+        return patch_fig, patch_div
     start_date = convert_date_input(start_month, start_year)
     cond_rate =calc_rate(rate)
     
@@ -229,8 +237,10 @@ def add_custom_scenario(compute_clicks, start_month: int, start_year: int, durat
 
     agent = LoanAgent()
     mod_df, trace = agent.calc_mod_amor_schedule(amount, start_date, cond_rate, duration, extra_payments, addin_name)
+    summary_card = LoanSummaryAIO(addin_name, mod_df)
     patch_fig['data'].append(trace)
-    return patch_fig
+    patch_div.append(build_summary_card_col(summary_card))
+    return patch_fig, patch_div
 
 
 
@@ -239,4 +249,4 @@ def add_custom_scenario(compute_clicks, start_month: int, start_year: int, durat
 
 
 if __name__  == '__main__':
-        app.run(debug=True, host='0.0.0.0', port='8050', dev_tools_hot_reload=True)
+        app.run(debug=True, host='0.0.0.0', port='8049', dev_tools_hot_reload=True)

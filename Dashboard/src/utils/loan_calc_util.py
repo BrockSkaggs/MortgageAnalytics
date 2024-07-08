@@ -66,14 +66,21 @@ class LoanCalc:
             payment_date = self._next_month(payment_date)
             month_interest = balance*rate_mon
             month_principal = payment-month_interest
-            balance -= month_principal
+            extra_principal = 0
             if payment_date in extra_principal_funds.keys() and balance > 0:
-                balance -= extra_principal_funds[payment_date]
+                extra_principal = extra_principal_funds[payment_date]
+            total_principal = month_principal + extra_principal
+            if total_principal > balance:
+                total_principal = balance
+                extra_principal = balance - month_principal
+                    
+            balance -= total_principal
             loan_status_dicts.append({
                 'month_id': j, 
                 'payment_date': payment_date,
                 'interest_paid':month_interest,
-                'principal_paid':month_principal,
+                'principal_paid':total_principal,
+                'extra_principal_paid': extra_principal,
                 'balance': balance
             })
 

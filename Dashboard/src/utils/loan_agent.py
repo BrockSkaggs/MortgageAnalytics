@@ -24,7 +24,8 @@ class LoanAgent:
             'plot_bgcolor':'rgba(0,0,0,0)',
             'paper_bgcolor': 'rgba(0, 0, 0, 0)',
             'yaxis':{'gridcolor':'black', 'zerolinecolor':'black'},
-            'xaxis':{'gridcolor':'black'}
+            'xaxis':{'gridcolor':'black'},
+            'hovermode': 'x unified'
         }
         fig = go.Figure(data=traces, layout=layout)
         return (df, fig)
