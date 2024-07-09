@@ -1,4 +1,4 @@
-from dash import Dash, html, dcc, callback, clientside_callback, Input, Output, State, Patch
+from dash import Dash, html, dcc, callback, clientside_callback, Input, Output, State, Patch, ClientsideFunction
 import dash_bootstrap_components as dbc
 import datetime as dt
 import numpy as np
@@ -99,6 +99,12 @@ clientside_callback("""function(clicks){
     Output('scenario_addin_modal', 'is_open', allow_duplicate=True),
     Input('add_scenario_btn', 'n_clicks'),
     prevent_initial_call=True)
+
+clientside_callback(
+    ClientsideFunction(namespace="clientside", function_name="make_draggable"),
+    Output('summary_cards_div', 'data-drag'),
+    Input('summary_cards_div', 'id')
+)
 
 @callback(
     Output('scenario_addin_modal', 'is_open'),
@@ -249,4 +255,4 @@ def add_custom_scenario(compute_clicks, start_month: int, start_year: int, durat
 
 
 if __name__  == '__main__':
-        app.run(debug=True, host='0.0.0.0', port='8049', dev_tools_hot_reload=True)
+        app.run(debug=True, host='0.0.0.0', port='8050', dev_tools_hot_reload=True)

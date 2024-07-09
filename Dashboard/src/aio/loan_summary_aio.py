@@ -1,4 +1,4 @@
-from dash import html
+from dash import html, callback, Input, Output, MATCH
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -7,7 +7,23 @@ import uuid
 class LoanSummaryAIO(html.Div):
 
     class ids:
-        ...
+        open_sched_btn = lambda aio_id: {
+            'component': 'LoanSummaryAIO',
+            'subcomponent': 'open_sched_btn',
+            'aio_id': aio_id
+        }
+
+        sched_modal = lambda aio_id: {
+            'component': 'LoanSummaryAIO',
+            'subcomponent': 'sched_modal',
+            'aio_id': aio_id
+        }
+
+        export_btn = lambda aio_id: {
+            'component': 'LoanSummaryAIO',
+            'subcomponent': 'export_btn',
+            'aio_id': aio_id
+        }
 
     ids = ids
 
@@ -39,100 +55,113 @@ class LoanSummaryAIO(html.Div):
             html.Div([
                 html.Div([
                     html.Div([
-                        html.H4(name)
+                        html.H4(name),
+                        html.Hr()
                     ], className='col-12')
                 ], className='row'),
                 html.Div([
                     html.Div([
-                        dbc.Tabs([
-                            dbc.Tab([
-                                html.Div([
-                                    html.Div([
-                                        html.Div([
-                                            html.Span('Loan Start')
-                                        ], className='col-lg-6'),
-                                        html.Div([
-                                            html.Span(f"{loan_start.strftime('%Y-%m-%d')}")
-                                        ], className='col-lg-6'),
-                                    ], className='row'),    
-                                    html.Div([
-                                        html.Div([
-                                            html.Span('Loan End')
-                                        ], className='col-lg-6'),
-                                        html.Div([
-                                            html.Span(f"{loan_end.strftime('%Y-%m-%d')}")
-                                        ], className='col-lg-6')
-                                    ], className='row'),
-                                    html.Div([
-                                        html.Div([
-                                            html.Span('Qty. Payments')
-                                        ], className='col-lg-6'),
-                                        html.Div([
-                                            html.Span(f"{pay_sched_df.shape[0]:,}")
-                                        ], className='col-lg-6')
-                                    ], className='row'),
-                                    html.Div([
-                                        html.Div([
-                                            html.Span('Duration')
-                                        ], className='col-lg-6'),
-                                        html.Div([
-                                            html.Span(f"{loan_dur_days/365.25:.2f} yrs.")
-                                        ], className='col-lg-6')
-                                    ], className='row'),
-                                    html.Div([
-                                        html.Div([
-                                            html.Span('Total Interest')
-                                        ], className='col-lg-6'),
-                                        html.Div([
-                                            html.Span(f'${total_interst:,.2f}')
-                                        ], className='col-lg-6')
-                                    ], className='row'),
-                                    html.Div([
-                                        html.Div([
-                                            html.Span('Total Cost')
-                                        ], className='col-lg-6'),
-                                        html.Div([
-                                            html.Span(f'${total_cost:,.2f}')
-                                        ], className='col-lg-6')
-                                    ], className='row')
-                                ], className='container-fluid mt-2')
-                            ], label='Summary'),
-                            dbc.Tab([
-                                html.Div([
-                                    html.Div([
-                                        html.Div([
-                                            dag.AgGrid(
-                                                columnDefs=[
-                                                    {'field': 'payment_date', 'headerName': 'Date', 'width': 120,
-                                                        'valueGetter': {'function': date_obj},
-                                                        'valueFormatter': {'function': f"d3.timeFormat('%m/%d/%Y')({date_obj})"}},
-                                                    {'field': 'interest_paid', 'headerName':'Interest', 'width':110,
-                                                         "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}},
-                                                    {'field': 'principal_paid', 'headerName':'Principal', 'width': 110,
-                                                        "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}},
-                                                    {'field': 'balance', 'headerName':'Balance',
-                                                        "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}}
-                                                ],
-                                                rowData=pay_sched_df.to_dict('records'),
-                                                style={'height':250},
-                                                getRowStyle={
-                                                    "styleConditions":[
-                                                        {"condition": "params.data.extra_principal_paid > 0", "style": {"backgroundColor": "lightgray"}}
-                                                    ]
-                                                }
-                                            )
-                                        ], className='col-12')
-                                    ], className='row')
-                                ], className='container-fluid mt-2')
-                            ], label='Schedule')
-                        ])
-                    ], className='col-12')
+                        html.Span('Loan Start')
+                    ], className='col-lg-6'),
+                    html.Div([
+                        html.Span(f"{loan_start.strftime('%Y-%m-%d')}")
+                    ], className='col-lg-6'),
                 ], className='row'),
-
-
-
-
-
-                
-            ], className='containter-fluid')
+                html.Div([
+                    html.Div([
+                        html.Span('Loan End')
+                    ], className='col-lg-6'),
+                    html.Div([
+                        html.Span(f"{loan_end.strftime('%Y-%m-%d')}")
+                    ], className='col-lg-6')
+                ], className='row'),
+                html.Div([
+                    html.Div([
+                        html.Span('Qty. Payments')
+                    ], className='col-lg-6'),
+                    html.Div([
+                        html.Span(f"{pay_sched_df.shape[0]:,}")
+                    ], className='col-lg-6')
+                ], className='row'),
+                html.Div([
+                    html.Div([
+                        html.Span('Duration')
+                    ], className='col-lg-6'),
+                    html.Div([
+                        html.Span(f"{loan_dur_days/365.25:.2f} yrs.")
+                    ], className='col-lg-6')
+                ], className='row'),
+                html.Div([
+                    html.Div([
+                        html.Span('Total Interest')
+                    ], className='col-lg-6'),
+                    html.Div([
+                        html.Span(f'${total_interst:,.2f}')
+                    ], className='col-lg-6')
+                ], className='row'),
+                html.Div([
+                    html.Div([
+                        html.Span('Total Cost')
+                    ], className='col-lg-6'),
+                    html.Div([
+                        html.Span(f'${total_cost:,.2f}')
+                    ], className='col-lg-6')
+                ], className='row'),
+                html.Div([
+                    html.Div([
+                        dbc.Button('Open Schedule', color='secondary', outline=True, id=self.ids.open_sched_btn(aio_id)),
+                        dbc.Button('Export', color='secondary', outline=True, id=self.ids.export_btn(aio_id), style={'marginLeft':'10px'})
+                    ], className='col-12 d-flex')
+                ], className='row'),
+                dbc.Modal(
+                    dbc.ModalBody([
+                        html.Div([
+                            html.Div([
+                                html.Div([
+                                    html.H3('Schedule of Payments')
+                                ], className='col-12 text-center')
+                            ], className='row'),
+                            html.Div([
+                                html.Div([
+                                    dag.AgGrid(
+                                        columnDefs=[
+                                            {'field': 'payment_date', 'headerName': 'Date', 'width': 120,
+                                                'valueGetter': {'function': date_obj},
+                                                'valueFormatter': {'function': f"d3.timeFormat('%m/%d/%Y')({date_obj})"}},
+                                            {'field': 'interest_paid', 'headerName':'Interest', 'width':110,
+                                                    "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}},
+                                            {'field': 'principal_paid', 'headerName':'Required Principal', 'width': 145,
+                                                "valueFormatter": {"function": "d3.format('($,.2f')(params.data.principal_paid - params.data.extra_principal_paid)"}},
+                                            {'field': 'extra_principal_paid', 'headerName':'Extra Principal', 'width': 120,
+                                                "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}},
+                                            {'field': 'balance', 'headerName':'Balance',
+                                                "valueFormatter": {"function": "d3.format('($,.2f')(params.value)"}}
+                                        ],
+                                        rowData=pay_sched_df.to_dict('records'),
+                                        columnSize='responsiveSizeToFit',
+                                        getRowStyle={
+                                            "styleConditions":[
+                                                {"condition": "params.data.extra_principal_paid > 0", "style": {"backgroundColor": "lightgray"}}
+                                            ]
+                                        }
+                                    )
+                                ], className='col-12')
+                            ], className='row')
+                        ], className='container-fluid mt-2')
+                    ]),
+                    is_open=False,
+                    size='lg',
+                    id=self.ids.sched_modal(aio_id)
+                )
+            ], className='containter-fluid mt-2')
         ]))
+
+    
+
+    @callback(
+        Output(ids.sched_modal(MATCH), 'is_open'),
+        Input(ids.open_sched_btn(MATCH), 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def open_sched_modal(_):
+        return True
