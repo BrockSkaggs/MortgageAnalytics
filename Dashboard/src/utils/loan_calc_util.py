@@ -67,8 +67,11 @@ class LoanCalc:
             month_interest = balance*rate_mon
             month_principal = payment-month_interest
             extra_principal = 0
-            if payment_date in extra_principal_funds.keys() and balance > 0:
-                extra_principal = extra_principal_funds[payment_date]
+            if month_principal >= balance:
+                month_principal = balance
+            else:
+                if payment_date in extra_principal_funds.keys() and balance > 0:
+                    extra_principal = extra_principal_funds[payment_date]
             total_principal = month_principal + extra_principal
             if total_principal > balance:
                 total_principal = balance

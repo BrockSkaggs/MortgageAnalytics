@@ -133,7 +133,7 @@ class ScenarioAddinAIO(html.Div):
                                 ], className='row'),
                                 html.Div([
                                     html.Div([
-                                        'Payment Amount'
+                                        'Principal Amount'
                                     ], className='col-lg-3 vertical-align'),
                                     html.Div([
                                         dbc.Input(
@@ -190,7 +190,7 @@ class ScenarioAddinAIO(html.Div):
                                 ], className='row mt-2'),
                                 html.Div([
                                     html.Div([
-                                        'Payment Amount'
+                                        'Principal Amount'
                                     ], className='col-lg-3 vertical-align'),
                                     html.Div([
                                         dbc.Input(

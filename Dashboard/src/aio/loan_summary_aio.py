@@ -1,6 +1,7 @@
-from dash import html, callback, Input, Output, MATCH
+from dash import html, callback, Input, Output, State, MATCH, dcc
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import json
 import pandas as pd
 import uuid
 
@@ -22,6 +23,18 @@ class LoanSummaryAIO(html.Div):
         export_btn = lambda aio_id: {
             'component': 'LoanSummaryAIO',
             'subcomponent': 'export_btn',
+            'aio_id': aio_id
+        }
+
+        export_dwnload = lambda aio_id: {
+            'component': 'LoanSummaryAIO',
+            'subcomponent': 'export_dwnload',
+            'aio_id': aio_id
+        }
+
+        export_store = lambda aio_id: {
+            'component': 'LoanSummaryAIO',
+            'subcomponent': 'export_store',
             'aio_id': aio_id
         }
 
@@ -47,9 +60,19 @@ class LoanSummaryAIO(html.Div):
         loan_start = pay_sched_df['payment_date'].min()
         loan_end = pay_sched_df['payment_date'].max()
         loan_dur_days = (loan_end - loan_start).days
-        total_interst = pay_sched_df['interest_paid'].sum()
+        total_interest = pay_sched_df['interest_paid'].sum()
         total_cost = pay_sched_df['interest_paid'].sum() + pay_sched_df['principal_paid'].sum()
         date_obj = "d3.timeParse('%Y-%m-%d')(params.data.payment_date)"
+
+        store_data = {
+            'name': name,
+            'loan_start': loan_start,
+            'loan_end': loan_end,
+            'loan_dur_years': loan_dur_days/365.25,
+            'total_interest': total_interest,
+            'total_cost': total_cost,
+            'schedule': pay_sched_df.to_dict('records')
+        }
 
         return dbc.Card(dbc.CardBody([
             html.Div([
@@ -96,7 +119,7 @@ class LoanSummaryAIO(html.Div):
                         html.Span('Total Interest')
                     ], className='col-lg-6'),
                     html.Div([
-                        html.Span(f'${total_interst:,.2f}')
+                        html.Span(f'${total_interest:,.2f}')
                     ], className='col-lg-6')
                 ], className='row'),
                 html.Div([
@@ -152,11 +175,11 @@ class LoanSummaryAIO(html.Div):
                     is_open=False,
                     size='lg',
                     id=self.ids.sched_modal(aio_id)
-                )
+                ),
+                dcc.Store(id=self.ids.export_store(aio_id), data=store_data),
+                dcc.Download(id=self.ids.export_dwnload(aio_id))
             ], className='containter-fluid mt-2')
         ]))
-
-    
 
     @callback(
         Output(ids.sched_modal(MATCH), 'is_open'),
@@ -165,3 +188,14 @@ class LoanSummaryAIO(html.Div):
     )
     def open_sched_modal(_):
         return True
+
+
+    @callback(
+        Output(ids.export_dwnload(MATCH), 'data'),
+        Input(ids.export_btn(MATCH), 'n_clicks'),
+        State(ids.export_store(MATCH), 'data'),
+        prevent_initial_call=True
+    )
+    def export_dwnload(_, store: dict):
+        json_data = json.dumps(store, indent=1)
+        return {'content': json_data, 'filename':'mortgage-scenario-export.json'}
