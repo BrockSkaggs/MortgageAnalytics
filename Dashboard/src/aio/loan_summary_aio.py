@@ -84,7 +84,7 @@ class LoanSummaryAIO(html.Div):
                 ], className='row'),
                 html.Div([
                     html.Div([
-                        html.Span('Loan Start')
+                        html.Span('First Payment')
                     ], className='col-lg-6'),
                     html.Div([
                         html.Span(f"{loan_start.strftime('%Y-%m-%d')}")
@@ -92,7 +92,7 @@ class LoanSummaryAIO(html.Div):
                 ], className='row'),
                 html.Div([
                     html.Div([
-                        html.Span('Loan End')
+                        html.Span('Last Payment')
                     ], className='col-lg-6'),
                     html.Div([
                         html.Span(f"{loan_end.strftime('%Y-%m-%d')}")

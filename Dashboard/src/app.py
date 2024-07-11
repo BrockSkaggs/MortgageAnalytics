@@ -255,4 +255,4 @@ def add_custom_scenario(compute_clicks, start_month: int, start_year: int, durat
 
 
 if __name__  == '__main__':
-        app.run(debug=True, host='0.0.0.0', port='8049', dev_tools_hot_reload=True)
+        app.run(debug=False, host='0.0.0.0', port='8050', dev_tools_hot_reload=True)
