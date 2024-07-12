@@ -10,4 +10,4 @@ This project looks to further this understanding.  Given the inputs of a standar
 
 ![Dashboard Screenshot](ProjectVisuals/DashboardScreenshot.PNG)
 
-A short video of the dashboard can be accessed [here](ProjectVisuals/DashboardDemo.mp4).
+A short video of the dashboard can be accessed [here](ProjectVisuals/DashboardDemo.mp4) and a containerized version of the dashboard can be found at [brockskaggs/mortgage-analytics](https://hub.docker.com/r/brockskaggs/mortgage-analytics) on dockerhub.
